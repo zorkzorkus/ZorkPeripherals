@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-// #typedef <your_type> length_t
+typedef uint16_t length_t;
 
 void SPIInit();
 void SPIWrite(uint8_t* wdata, length_t wlen);

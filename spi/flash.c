@@ -37,21 +37,22 @@ void FlashWritePage(uint32_t address, uint8_t* data, uint32_t wlen) {
 }
 
 void FlashOverwrite(uint32_t address, uint8_t* data, uint32_t length) {
-
+	// TODO: erase affected sectors
+	// write data to sectors
 }
 
-void FlashWrite(uint32_t address, uint8_t wdata, length_t wlen) {
+void FlashWrite(uint32_t address, uint8_t* wdata, length_t wlen) {
 
 	uint32_t addrBegin = address & FLASH_PAGE_MASK;
-	uint32_t addrEnd = (address + length + (FLASH_PAGE_SIZE - 1)) & FLASH_PAGE_MASK;
+	uint32_t addrEnd = (address + wlen + (FLASH_PAGE_SIZE - 1)) & FLASH_PAGE_MASK;
 	uint32_t pages = (addrEnd - addrBegin) / FLASH_PAGE_SIZE;
 
 	uint32_t currentAddr = addrBegin;
-	uint32_t remainingBytes = length;
+	uint32_t remainingBytes = wlen;
 	uint32_t writtenBytes = 0;
 
 	for (uint32_t p = 0; p < pages; ++p) {
-		FlashRead(currentAddr, m_FlashPageBuffer, FLASH_PAGE_SIZE);
+		FlashRead(currentAddr, m_FlashSectorBuffer, FLASH_PAGE_SIZE);
 		FlashWaitForWriteEnable();
 		FlashErasePage(currentAddr);
 
@@ -60,34 +61,34 @@ void FlashWrite(uint32_t address, uint8_t wdata, length_t wlen) {
 		// first (or only) page (can be partial)
 		if (p == 0) {
 			uint32_t offset = address - addrBegin;
-			uint32_t firstPageLength = min(length, FLASH_PAGE_SIZE - offset);
+			uint32_t firstPageLength = min(wlen, FLASH_PAGE_SIZE - offset);
 			for (uint32_t i = 0; i < firstPageLength; ++i) {
-			m_FlashPageBuffer[i + offset] = data[i];
+			m_FlashSectorBuffer[i + offset] = wdata[i];
 		}
 		remainingBytes -= firstPageLength;
 		writtenBytes += firstPageLength;
 		} else if (p + 1 == pages) { // last page (can be partial))
 			for (uint32_t i = 0; i < remainingBytes; ++i) {
-				m_FlashPageBuffer[i] = data[writtenBytes + i];
+				m_FlashSectorBuffer[i] = wdata[writtenBytes + i];
 			}
 		} else { // full page in between
 			for (uint32_t i = 0; i < FLASH_PAGE_SIZE; ++i) {
-				m_FlashPageBuffer[i] = data[writtenBytes + i];
+				m_FlashSectorBuffer[i] = wdata[writtenBytes + i];
 			}
 			remainingBytes -= FLASH_PAGE_SIZE;
 			writtenBytes += FLASH_PAGE_SIZE;
 		}
 
 		FlashWaitForWriteEnable();
-		FlashWritePage(currentAddr, m_FlashPageBuffer, FLASH_PAGE_SIZE);
+		FlashWritePage(currentAddr, m_FlashSectorBuffer, FLASH_PAGE_SIZE);
 		currentAddr += FLASH_PAGE_SIZE;
 	}
 }
 
 void FlashRead(uint32_t addr, uint8_t rdata, length_t rlen) {
 	FlashWaitForReady();
-	uint8_t cmd[] = {FLASH_CMD_READ, (address >> 16), (address >> 8), (address >> 0)};
-	SPIWriteRead(cmd, sizeof (cmd), data, length);
+	uint8_t cmd[] = {FLASH_CMD_READ, (addr >> 16), (addr >> 8), (addr >> 0)};
+	SPIWriteRead(cmd, sizeof (cmd), rdata, rlen);
 }
 
 void FlashErasePage(uint32_t address) {
