@@ -72,8 +72,8 @@
 #define MADCTL_MH 0x04
 
 
-static void _Spi_WriteByte(ILI9341* ILI9341, uint8_t byte) {
-	ILI9341->f_write(&byte, 1);
+static void _Spi_WriteByte(ILI9341* ili9341, uint8_t byte) {
+	ili9341->f_write(&byte, 1);
 }
 
 static void _Spi_Command(ILI9341* st, uint8_t cmd, uint8_t argc, uint8_t* args, uint8_t delay) {
@@ -90,7 +90,7 @@ static void _Spi_Command(ILI9341* st, uint8_t cmd, uint8_t argc, uint8_t* args, 
 	}
 }
 
-void ILI9341_Init(ILI9341* ILI9341) {
+void ILI9341_Init(ILI9341* ili9341) {
 
 	static const uint8_t initCmds[] = {
 		//0xEF, 3, 0x03, 0x80, 0x02, // couldn't find what this command is in the datasheet
@@ -126,78 +126,78 @@ void ILI9341_Init(ILI9341* ILI9341) {
 		uint8_t cmd = initCmds[index];
 		uint8_t argc = initCmds[index + 1] & ~DISPLAY_DELAY;
 		uint8_t delay = (initCmds[index + 1] & DISPLAY_DELAY) ? 100 : 0;
-		_Spi_Command(ILI9341, cmd, argc, (uint8_t*) initCmds + index + 2, delay);
+		_Spi_Command(ili9341, cmd, argc, (uint8_t*) initCmds + index + 2, delay);
 		index += argc + 2;
 	}
 
-	ILI9341_SetRotation(ILI9341, 0);
-	ILI9341_SetArea(ILI9341, 0, 0, ILI9341->m_Width - 1, ILI9341->m_Height - 1);
+	ILI9341_SetRotation(ili9341, 0);
+	ILI9341_SetArea(ili9341, 0, 0, ili9341->m_Width - 1, ili9341->m_Height - 1);
 
 }
 
-void ILI9341_DrawPixel(ILI9341* ILI9341, uint16_t x, uint16_t y, uint16_t color) {
-	ILI9341->f_cs(true);
-	ILI9341->f_cmd(true);
-	_Spi_WriteByte(ILI9341, ILI9341_CASET);
-	ILI9341->f_cmd(false);
-	_Spi_WriteByte(ILI9341, x >> 8);
-	_Spi_WriteByte(ILI9341, x);
-	ILI9341->f_cmd(true);
-	_Spi_WriteByte(ILI9341, ILI9341_RASET);
-	ILI9341->f_cmd(false);
-	_Spi_WriteByte(ILI9341, y >> 8);
-	_Spi_WriteByte(ILI9341, y);
-	ILI9341->f_cmd(true);
-	_Spi_WriteByte(ILI9341, ILI9341_RAMWR);
-	ILI9341->f_cmd(false);
-	ILI9341->f_write((uint8_t*) & color, sizeof (color));
-	ILI9341->f_cs(false);
+void ILI9341_DrawPixel(ILI9341* ili9341, uint16_t x, uint16_t y, uint16_t color) {
+	ili9341->f_cs(true);
+	ili9341->f_cmd(true);
+	_Spi_WriteByte(ili9341, ILI9341_CASET);
+	ili9341->f_cmd(false);
+	_Spi_WriteByte(ili9341, x >> 8);
+	_Spi_WriteByte(ili9341, x);
+	ili9341->f_cmd(true);
+	_Spi_WriteByte(ili9341, ILI9341_RASET);
+	ili9341->f_cmd(false);
+	_Spi_WriteByte(ili9341, y >> 8);
+	_Spi_WriteByte(ili9341, y);
+	ili9341->f_cmd(true);
+	_Spi_WriteByte(ili9341, ILI9341_RAMWR);
+	ili9341->f_cmd(false);
+	ili9341->f_write((uint8_t*) & color, sizeof (color));
+	ili9341->f_cs(false);
 
 }
 
-void ILI9341_DrawArea(ILI9341* ILI9341, uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t* data) {
-	ILI9341_SetArea(ILI9341, x, y, width, height);
-	ILI9341_StreamData(ILI9341, data, (uint32_t)width*height);
+void ILI9341_DrawArea(ILI9341* ili9341, uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t* data) {
+	ILI9341_SetArea(ili9341, x, y, width, height);
+	ILI9341_StreamData(ili9341, data, (uint32_t)width*height);
 }
 
-void ILI9341_FillArea(ILI9341* ILI9341, uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t color) {
-	ILI9341_SetArea(ILI9341, x, y, width, height);
-	ILI9341->f_cs(true);
-	ILI9341->f_cmd(true);
-	_Spi_WriteByte(ILI9341, ILI9341_RAMWR);
-	ILI9341->f_cmd(false);
+void ILI9341_FillArea(ILI9341* ili9341, uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t color) {
+	ILI9341_SetArea(ili9341, x, y, width, height);
+	ili9341->f_cs(true);
+	ili9341->f_cmd(true);
+	_Spi_WriteByte(ili9341, ILI9341_RAMWR);
+	ili9341->f_cmd(false);
 	for (uint32_t i = 0; i < (uint32_t)width * height; ++i) {
-		_Spi_WriteByte(ILI9341, (uint8_t) (color >> 8));
-		_Spi_WriteByte(ILI9341, (uint8_t) color);
+		_Spi_WriteByte(ili9341, (uint8_t) (color >> 8));
+		_Spi_WriteByte(ili9341, (uint8_t) color);
 	}
-	ILI9341->f_cs(false);
+	ili9341->f_cs(false);
 }
 
-void ILI9341_SetRotation(ILI9341* ILI9341, uint8_t rotation) {
+void ILI9341_SetRotation(ILI9341* ili9341, uint8_t rotation) {
 	uint8_t madctl = MADCTL_BGR;
 	rotation %= 4;
 	if (rotation == 0) {
-		ILI9341->m_Height = ILI9341_BASEHEIGHT;
-		ILI9341->m_Width = ILI9341_BASEWIDTH;
+		ili9341->m_Height = ILI9341_BASEHEIGHT;
+		ili9341->m_Width = ILI9341_BASEWIDTH;
 		madctl |= MADCTL_MX;
 	} else if (rotation == 1) {
-		ILI9341->m_Width = ILI9341_BASEHEIGHT;
-		ILI9341->m_Height = ILI9341_BASEWIDTH;
+		ili9341->m_Width = ILI9341_BASEHEIGHT;
+		ili9341->m_Height = ILI9341_BASEWIDTH;
 		madctl |= MADCTL_MV;
 	} else if (rotation == 2) {
-		ILI9341->m_Height = ILI9341_BASEHEIGHT;
-		ILI9341->m_Width = ILI9341_BASEWIDTH;
+		ili9341->m_Height = ILI9341_BASEHEIGHT;
+		ili9341->m_Width = ILI9341_BASEWIDTH;
 		madctl |= MADCTL_MY;
 	} else if (rotation == 3) {
-		ILI9341->m_Width = ILI9341_BASEHEIGHT;
+		ili9341->m_Width = ILI9341_BASEHEIGHT;
 		ILI9341->m_Height = ILI9341_BASEWIDTH;
 		madctl |= MADCTL_MX | MADCTL_MY | MADCTL_MV;
 	}
-	ILI9341->m_Rotation = rotation;
-	_Spi_Command(ILI9341, ILI9341_MADCTL, 1, &madctl, 0);
+	ili9341->m_Rotation = rotation;
+	_Spi_Command(ili9341, ILI9341_MADCTL, 1, &madctl, 0);
 }
 
-void ILI9341_SetArea(ILI9341* ILI9341, uint16_t x, uint16_t y, uint16_t width, uint16_t height) {
+void ILI9341_SetArea(ILI9341* ili9341, uint16_t x, uint16_t y, uint16_t width, uint16_t height) {
 	uint8_t data1[4];
 	uint8_t data2[4];
 	data1[0] = x >> 8;
@@ -208,39 +208,39 @@ void ILI9341_SetArea(ILI9341* ILI9341, uint16_t x, uint16_t y, uint16_t width, u
 	data2[1] = y;
 	data2[2] = (height+y-1) >> 8;
 	data2[3] = height+y-1;
-	_Spi_Command(ILI9341, ILI9341_CASET, 4, data1, 0);
-	_Spi_Command(ILI9341, ILI9341_RASET, 4, data2, 0);
+	_Spi_Command(ili9341, ILI9341_CASET, 4, data1, 0);
+	_Spi_Command(ili9341, ILI9341_RASET, 4, data2, 0);
 }
 
-void ILI9341_StreamData(ILI9341* ILI9341, uint16_t* data, uint32_t length) {
-	ILI9341->f_cs(true);
-	ILI9341->f_cmd(true);
-	_Spi_WriteByte(ILI9341, ILI9341_RAMWR);
-	ILI9341->f_cmd(false);
+void ILI9341_StreamData(ILI9341* ili9341, uint16_t* data, uint32_t length) {
+	ili9341->f_cs(true);
+	ili9341->f_cmd(true);
+	_Spi_WriteByte(ili9341, ILI9341_RAMWR);
+	ili9341->f_cmd(false);
 	while (length) {
-		_Spi_WriteByte(ILI9341, (*data) >> 8);
-		_Spi_WriteByte(ILI9341, (*data));
+		_Spi_WriteByte(ili9341, (*data) >> 8);
+		_Spi_WriteByte(ili9341, (*data));
 		length--;
 	}
-	ILI9341->f_cs(false);
+	ili9341->f_cs(false);
 }
 
 #if ILI9341_INCLUDE_FRAMEBUFFER == 1
 
-void ILI9341_Present(ILI9341* ILI9341) {
-	ILI9341_SetArea(ILI9341, 0, 0, ILI9341->width, ILI9341->height);
-	ILI9341_StreamData(ILI9341, ILI9341->m_Framebuffer, sizeof(ILI9341->m_Framebuffer) / 2);
+void ILI9341_Present(ILI9341* ili9341) {
+	ILI9341_SetArea(ili9341, 0, 0, ILI9341->width, ILI9341->height);
+	ILI9341_StreamData(ili9341, ILI9341->m_Framebuffer, sizeof(ili9341->m_Framebuffer) / 2);
 }
 
-void ILI9341_PresentArea(ILI9341* ILI9341, uint16_t x, uint16_t y, uint16_t width, uint16_t height) {
+void ILI9341_PresentArea(ILI9341* ili9341, uint16_t x, uint16_t y, uint16_t width, uint16_t height) {
 	for (int i = y; y < height; ++y) {
-		ILI9341_SetArea(ILI9341, x, i, width, 1);
-		ILI9341_StreamData(ILI9341, &m_Framebuffer[i*ILI9341->m_Width+x], width);
+		ILI9341_SetArea(ili9341, x, i, width, 1);
+		ILI9341_StreamData(ili9341, &m_Framebuffer[i*ili9341->m_Width+x], width);
 	}
 }
 
-void ILI9341_SetPixel(ILI9341* ILI9341, uint16_t x, uint16_t y, uint16_t color) {
-	ILI9341->m_Framebuffer[(uint32_t)y * m_Width + x] = color;
+void ILI9341_SetPixel(ILI9341* ili9341, uint16_t x, uint16_t y, uint16_t color) {
+	ili9341->m_Framebuffer[(uint32_t)y * m_Width + x] = color;
 }
 
 #endif // ILI9341_INCLUDE_FRAMEBUFFER == 1
