@@ -190,7 +190,7 @@ void ILI9341_SetRotation(ILI9341* ili9341, uint8_t rotation) {
 		madctl |= MADCTL_MY;
 	} else if (rotation == 3) {
 		ili9341->m_Width = ILI9341_BASEHEIGHT;
-		ILI9341->m_Height = ILI9341_BASEWIDTH;
+		ili9341->m_Height = ILI9341_BASEWIDTH;
 		madctl |= MADCTL_MX | MADCTL_MY | MADCTL_MV;
 	}
 	ili9341->m_Rotation = rotation;
