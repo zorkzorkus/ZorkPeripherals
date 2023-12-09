@@ -1,7 +1,7 @@
 // License: MIT
 // Adapted from Adafruit Arduino Library
 // https://github.com/adafruit/Adafruit_ILI9341
-// Copyright 2022 (c) Zork 'zorkzorkus' Zorkus
+// Copyright 2023 (c) Zork 'zorkzorkus' Zorkus
 //                (c) Adafruit Industries
 
 #include "ili9341.h"
@@ -58,7 +58,7 @@
 #define ILI9341_GMCTRP1 0xE0
 #define ILI9341_GMCTRN1 0xE1
 #define ILI9341_DTCTRA 0xE8
-#define ILI9341_DTCTRB 0xEA	
+#define ILI9341_DTCTRB 0xEA
 #define ILI9341_POSCTR 0xED
 #define ILI9341_ENA3G 0xF2
 #define ILI9341_PUMPRCTR 0xF7
@@ -120,6 +120,13 @@ void ILI9341_Init(ILI9341* ili9341) {
 		ILI9341_SLPOUT  , 0x80,                // Exit Sleep
 		ILI9341_DISPON  , 0x80,                // Display on
 	};
+
+	if (ili9341->f_reset) {
+		ili9341->f_reset(true);
+		ili9341->f_delay(100);
+		ili9341->f_reset(false);
+		ili9341->f_delay(500);
+	}
 
 	uint32_t index = 0;
 	while (index < sizeof (initCmds)) {
@@ -220,6 +227,7 @@ void ILI9341_StreamData(ILI9341* ili9341, uint16_t* data, uint32_t length) {
 	while (length) {
 		_Spi_WriteByte(ili9341, (*data) >> 8);
 		_Spi_WriteByte(ili9341, (*data));
+        ++data;
 		length--;
 	}
 	ili9341->f_cs(false);

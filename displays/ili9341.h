@@ -1,7 +1,7 @@
 // License: MIT
 // Adapted from Adafruit Arduino Library
 // https://github.com/adafruit/Adafruit_ILI9341
-// Copyright 2022 (c) Zork 'zorkzorkus' Zorkus
+// Copyright 2023 (c) Zork 'zorkzorkus' Zorkus
 //                (c) Adafruit Industries
 
 #ifndef ILI9341_H
@@ -13,7 +13,7 @@
 
 #include "spi.h"
 
-// --- Configure the library for the MCU 
+// --- Configure the library for the MCU
 #define ILI9341_INCLUDE_FRAMEBUFFER 0
 // ---
 
@@ -25,6 +25,7 @@ typedef struct {
 	Spi_ChipSelect_f f_cs;
 	Spi_CommandSelect_f f_cmd;
 	Spi_DelayMs_f f_delay;
+	Spi_Reset_f f_reset;
 	uint16_t m_Width;
 	uint16_t m_Height;
 	uint8_t m_Rotation;
