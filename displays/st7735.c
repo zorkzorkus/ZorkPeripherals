@@ -1,7 +1,7 @@
 // License: MIT
 // Adapted from Adafruit Arduino Library
 // https://github.com/adafruit/Adafruit-ST7735-Library
-// Copyright 2022 (c) Zork 'zorkzorkus' Zorkus
+// Copyright 2023 (c) Zork 'zorkzorkus' Zorkus
 //                (c) Adafruit Industries
 
 #include "st7735.h"
@@ -74,7 +74,7 @@ static void _Spi_Command(ST7735* st, uint8_t cmd, uint8_t argc, uint8_t* args, u
 	}
 }
 
-void ST7735_Init(ST7735* st7735) {
+void ST7735_Init(ST7735* st7735, uint16_t width, uint16_t height, uint16_t offsetx, uint16_t offsety) {
 
 	static const uint8_t initcmds[] = {
 		ST77XX_SWRESET, DISPLAY_DELAY, 150,
@@ -105,6 +105,13 @@ void ST7735_Init(ST7735* st7735) {
 		ST77XX_DISPON, DISPLAY_DELAY, 100,
 	};
 
+	if (st7735->f_reset) {
+		st7735->f_reset(true);
+		st7735->f_delay(100);
+		st7735->f_reset(false);
+		st7735->f_delay(500);
+	}
+
 	uint32_t index = 0;
 	while (index < sizeof (initcmds)) {
 		uint8_t cmd = initcmds[index];
@@ -113,23 +120,30 @@ void ST7735_Init(ST7735* st7735) {
 		_Spi_Command(st7735, cmd, argc, (uint8_t*) initcmds + index + 2, delay);
 		index += argc + 2 + (delay > 0);
 	}
-
+	st7735->m_BaseWidth = width;
+	st7735->m_BaseHeight = height;
+	st7735->m_OffsetX = offsetx;
+	st7735->m_OffsetY = offsety;
 	ST7735_SetRotation(st7735, 1);
 	ST7735_SetArea(st7735, 0, 0, st7735->m_Width - 1, st7735->m_Height - 1);
 
 }
 
-void ST7735_DrawPixel(ST7735* st7735, uint8_t x, uint8_t y, uint16_t color) {
+void ST7735_DrawPixel(ST7735* st7735, uint16_t x, uint16_t y, uint16_t color) {
+
+	x += st7735->m_OffsetX;
+	y += st7735->m_OffsetY;
+
 	st7735->f_cs(true);
 	st7735->f_cmd(true);
 	_Spi_WriteByte(st7735, ST77XX_CASET);
 	st7735->f_cmd(false);
-	_Spi_WriteByte(st7735, 0);
+	_Spi_WriteByte(st7735, x >> 8);
 	_Spi_WriteByte(st7735, x);
 	st7735->f_cmd(true);
 	_Spi_WriteByte(st7735, ST77XX_RASET);
 	st7735->f_cmd(false);
-	_Spi_WriteByte(st7735, 0);
+	_Spi_WriteByte(st7735, y >> 8);
 	_Spi_WriteByte(st7735, y);
 	st7735->f_cmd(true);
 	_Spi_WriteByte(st7735, ST77XX_RAMWR);
@@ -139,18 +153,18 @@ void ST7735_DrawPixel(ST7735* st7735, uint8_t x, uint8_t y, uint16_t color) {
 
 }
 
-void ST7735_DrawArea(ST7735* st7735, uint8_t x, uint8_t y, uint8_t width, uint8_t height, uint16_t* data) {
-	ST7735_SetArea(st7735, x,y, width, height);
-	ST7735_StreamData(st7735, data, width*height);
+void ST7735_DrawArea(ST7735* st7735, uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t* data) {
+	ST7735_SetArea(st7735, x, y, width, height);
+	ST7735_StreamData(st7735, data, width * height);
 }
 
-void ST7735_FillArea(ST7735* st7735, uint8_t x, uint8_t y, uint8_t width, uint8_t height, uint16_t color) {
-	ST7735_SetArea(st7735, x,y, width, height);
+void ST7735_FillArea(ST7735* st7735, uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t color) {
+	ST7735_SetArea(st7735, x, y, width, height);
 	st7735->f_cs(true);
 	st7735->f_cmd(true);
 	_Spi_WriteByte(st7735, ST77XX_RAMWR);
 	st7735->f_cmd(false);
-	for(uint16_t i = 0; i < width*height; ++i) {
+	for (uint16_t i = 0; i < width * height; ++i) {
 		_Spi_WriteByte(st7735, (uint8_t) (color >> 8));
 		_Spi_WriteByte(st7735, (uint8_t) color);
 	}
@@ -161,34 +175,42 @@ void ST7735_SetRotation(ST7735* st7735, uint8_t rotation) {
 	uint8_t madctl = ST77XX_MADCTL_RGB;
 	rotation %= 4;
 	if (rotation == 0) {
-		st7735->m_Height = ST7735_BASEHEIGHT;
-		st7735->m_Width = ST7735_BASEWIDTH;
+		st7735->m_Height = st7735->m_BaseHeight;
+		st7735->m_Width = st7735->m_BaseWidth;
 		madctl |= ST77XX_MADCTL_MX | ST77XX_MADCTL_MY;
 	} else if (rotation == 1) {
-		st7735->m_Width = ST7735_BASEHEIGHT;
-		st7735->m_Height = ST7735_BASEWIDTH;
+		st7735->m_Width = st7735->m_BaseHeight;
+		st7735->m_Height = st7735->m_BaseWidth;
 		madctl |= ST77XX_MADCTL_MY | ST77XX_MADCTL_MV;
 	} else if (rotation == 2) {
-		st7735->m_Height = ST7735_BASEHEIGHT;
-		st7735->m_Width = ST7735_BASEWIDTH;
+		st7735->m_Height = st7735->m_BaseHeight;
+		st7735->m_Width = st7735->m_BaseWidth;
 	} else if (rotation == 3) {
-		st7735->m_Width = ST7735_BASEHEIGHT;
-		st7735->m_Height = ST7735_BASEWIDTH;
+		st7735->m_Width = st7735->m_BaseHeight;
+		st7735->m_Height = st7735->m_BaseWidth;
 		madctl |= ST77XX_MADCTL_MX | ST77XX_MADCTL_MV;
 	}
 	st7735->m_Rotation = rotation;
 	_Spi_Command(st7735, ST77XX_MADCTL, 1, &madctl, 0);
 }
 
-void ST7735_SetArea(ST7735* st7735, uint8_t x, uint8_t y, uint8_t width, uint8_t height) {
+void ST7735_SetArea(ST7735* st7735, uint16_t x, uint16_t y, uint16_t width, uint16_t height) {
 	uint8_t data1[4] = {0, 0, 0, 0};
 	uint8_t data2[4] = {0, 0, 0, 0};
-	data1[1] = x;
-	data1[3] = width+x-1;
-	data2[1] = y;
-	data2[3] = height+y-1;
-	_Spi_Command(st7735, ST77XX_CASET, 4, data1, 0);
-	_Spi_Command(st7735, ST77XX_RASET, 4, data2, 0);
+	uint16_t xstart = (x + st7735->m_OffsetX);
+	uint16_t xend = xstart + width - 1;
+	uint16_t ystart = (y + st7735->m_OffsetY);
+	uint16_t yend = ystart + height - 1;
+	data1[0] = xstart >> 8;
+	data1[1] = xstart;
+	data1[2] = xend >> 8;
+	data1[3] = xend;
+	data2[0] = ystart >> 8;
+	data2[1] = ystart;
+	data2[2] = yend >> 8;
+	data2[3] = yend;
+	_Spi_Command(st7735, ST77XX_CASET, 4, (uint8_t*) data1, 0);
+	_Spi_Command(st7735, ST77XX_RASET, 4, (uint8_t*) data2, 0);
 }
 
 void ST7735_StreamData(ST7735* st7735, uint16_t* data, uint32_t length) {
@@ -200,6 +222,7 @@ void ST7735_StreamData(ST7735* st7735, uint16_t* data, uint32_t length) {
 		_Spi_WriteByte(st7735, (*data) >> 8);
 		_Spi_WriteByte(st7735, (*data));
 		length--;
+		++data;
 	}
 	st7735->f_cs(false);
 }
@@ -208,17 +231,17 @@ void ST7735_StreamData(ST7735* st7735, uint16_t* data, uint32_t length) {
 
 void ST7735_Present(ST7735* st7735) {
 	ST7735_SetArea(st7735, 0, 0, st7735->width, st7735->height);
-	ST7735_StreamData(st7735, st7735->m_Framebuffer, sizeof(st7735->m_Framebuffer) / 2);
+	ST7735_StreamData(st7735, st7735->m_Framebuffer, sizeof (st7735->m_Framebuffer) / 2);
 }
 
-void ST7735_PresentArea(ST7735* st7735, uint8_t x, uint8_t y, uint8_t width, uint8_t height) {
-	for (int i = y; y < height; ++y) {
+void ST7735_PresentArea(ST7735* st7735, uint16_t x, uint16_t y, uint16_t width, uint16_t height) {
+	for (uint16_t i = y; y < height; ++y) {
 		ST7735_SetArea(st7735, x, i, width, 1);
-		ST7735_StreamData(st7735, &m_Framebuffer[i*st7735->m_Width+x], width);
+		ST7735_StreamData(st7735, &m_Framebuffer[i * st7735->m_Width + x], width);
 	}
 }
 
-void ST7735_SetPixel(ST7735* st7735, uint8_t x, uint8_t y, uint16_t color) {
+void ST7735_SetPixel(ST7735* st7735, uint16_t x, uint16_t y, uint16_t color) {
 	st7735->m_Framebuffer[y * m_Width + x] = color;
 }
 
