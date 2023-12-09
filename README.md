@@ -7,6 +7,10 @@ A library for all kind of different microcontroller peripheral devices (such as 
 * SPI-Display 
 	* ST7735 160 x 128
 	* ILI9341 320 x 240
+* I2C-Display
+	* SSD1306 128x64 OLED
+* Other
+	* TLC59108 I2C LED Driver
 
 ## How to Use
 
