@@ -1,5 +1,5 @@
 // License: MIT
-// Copyright 2022 (c) Zork 'zorkzorkus' Zorkus
+// Copyright 2023 (c) Zork 'zorkzorkus' Zorkus
 
 #ifndef SPI_H
 #define SPI_H
